@@ -4,7 +4,7 @@ github:
   hmacTokenSecretName: "github-hmac"
   # Legacy single repo support (for backward compatibility)
   org: "kravch3nko"  # Your GitHub username
-  repo: "tide-test-repo"  # Your test repository name
+  repo: "test-tide-merge-queue"  # Your test repository name
 
 # Multi-repository configuration (recommended approach)
 repositories:
