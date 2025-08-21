@@ -261,4 +261,3 @@ helm upgrade prow ./prow-helm \
   --namespace prow \
   --set github.org="new-org" \
   --set github.repo="new-repo"
-
