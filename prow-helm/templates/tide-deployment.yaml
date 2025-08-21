@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tide
+  namespace: prow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tide
+  template:
+    metadata:
+      labels:
+        app: tide
+    spec:
+      containers:
+      - name: tide
+        image: {{ .Values.tide.image }}
+        args:
+        - --config-path=/etc/config/config.yaml
+        - --github-token-path=/etc/github/token
+        volumeMounts:
+        - name: config
+          mountPath: /etc/config
+        - name: github-token
+          mountPath: /etc/github
+      volumes:
+      - name: config
+        configMap:
+          name: prow-config
+      - name: github-token
+        secret:
+          secretName: {{ .Values.github.tokenSecretName }}

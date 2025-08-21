@@ -1,0 +1,41 @@
+github:
+  # GitHub settings - can be overridden by environment variables
+  tokenSecretName: "github-token"
+  hmacTokenSecretName: "github-hmac"
+  # Legacy single repo support (for backward compatibility)
+  org: "kravch3nko"  # Your GitHub username
+  repo: "tide-test-repo"  # Your test repository name
+
+# Multi-repository configuration (recommended approach)
+repositories:
+  # Test repository with GitHub Actions CI
+  - org: "kravch3nko"
+    name: "test-tide-merge-queue"
+    ciStatusChecks:
+      - "ci/test"           # Simulated test check
+      - "ci/lint"           # Simulated lint check (50% failure)
+      - "ci/build"          # Simulated build check
+
+tide:
+  image: "gcr.io/k8s-prow/tide:latest"
+  mergeMethod: rebase
+  
+  # Default settings for all repositories
+  requiredLabels: 
+    - "merge-queue/add"
+    
+  missingLabels: 
+    - "merge-queue/conflict"
+    - "merge-queue/stop"
+    
+  # Default CI status checks (used when repo doesn't specify its own)
+  defaultCiStatusChecks:
+    - "ci/test"
+    - "ci/lint"
+
+# Environment variable overrides (used in deployment)
+env:
+  # Set these environment variables to override values above
+  # GITHUB_ORG: "my-org"
+  # GITHUB_REPO: "my-repo"  # For single repo mode
+  # CI_STATUS_CHECKS: "ci/test,ci/lint,ci/build"  # Comma-separated list

@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hook
+  namespace: prow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hook
+  template:
+    metadata:
+      labels:
+        app: hook
+    spec:
+      containers:
+      - name: hook
+        image: {{ .Values.hook.image }}
+        args:
+        - --config-path=/etc/config/config.yaml
+        - --github-token-path=/etc/github/token
+        - --hmac-secret-file=/etc/hmac/hmac
+        ports:
+        - containerPort: 8888
+        volumeMounts:
+        - name: config
+          mountPath: /etc/config
+        - name: github-token
+          mountPath: /etc/github
+        - name: github-hmac
+          mountPath: /etc/hmac
+      volumes:
+      - name: config
+        configMap:
+          name: prow-config
+      - name: github-token
+        secret:
+          secretName: {{ .Values.github.tokenSecretName }}
+      - name: github-hmac
+        secret:
+          secretName: {{ .Values.github.hmacTokenSecretName }}

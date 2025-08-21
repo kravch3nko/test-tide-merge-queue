@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deck
+  namespace: prow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: deck
+  template:
+    metadata:
+      labels:
+        app: deck
+    spec:
+      containers:
+      - name: deck
+        image: {{ .Values.deck.image }}
+        args:
+        - --config-path=/etc/config/config.yaml
+        - --github-token-path=/etc/github/token
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: config
+          mountPath: /etc/config
+        - name: github-token
+          mountPath: /etc/github
+      volumes:
+      - name: config
+        configMap:
+          name: prow-config
+      - name: github-token
+        secret:
+          secretName: {{ .Values.github.tokenSecretName }}
