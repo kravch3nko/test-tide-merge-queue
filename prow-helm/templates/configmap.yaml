@@ -34,7 +34,7 @@ data:
         {{ .org }}/{{ .name }}: {{ $.Values.tide.mergeMethod }}
         {{- end }}
       squash_label: ""
-      blocker_label: ""
+      blocker_label: "merge-queue/stop"
       
       queries:
       {{- /* Generate separate query for each repository to handle different CI checks */ -}}
@@ -42,7 +42,7 @@ data:
       {{- $repoName := printf "%s/%s" .org .name }}
       {{- $ciChecks := .ciStatusChecks | default $.Values.tide.defaultCiStatusChecks }}
       
-      # Critical Priority for {{ $repoName }} (bypasses repo stop)
+      # Critical Priority for {{ $repoName }} (bypasses global stop)
       - repos:
         - {{ $repoName }}
         labels:
@@ -55,7 +55,7 @@ data:
         {{- end }}
         includeDrafts: false
       
-      # High Priority for {{ $repoName }} (respects repo stop)
+      # High Priority for {{ $repoName }} (respects global stop)
       - repos:
         - {{ $repoName }}
         labels:
@@ -69,7 +69,7 @@ data:
         {{- end }}
         includeDrafts: false
       
-      # Normal Priority for {{ $repoName }} (respects repo stop)
+      # Normal Priority for {{ $repoName }} (respects global stop)
       - repos:
         - {{ $repoName }}
         labels:
