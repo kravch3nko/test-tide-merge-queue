@@ -1,50 +1,27 @@
 # 🏷️ Tide GitHub Controls - User Guide
 
-This guide explains how to control the Tide merge queue using GitHub labels.
+Simple GitHub label-based merge queue control.
 
 ## 📋 Available Labels
 
-### Action Labels (Choose One)
-
-| Label | Purpose | Priority | Respects Stop |
-|-------|---------|----------|---------------|
-| `merge-queue/add` | Add PR to merge queue | Normal | ✅ Yes |
-| `merge-queue/add-high` | High priority merge | High | ✅ Yes |
-| `merge-queue/add-critical` | Emergency merge | Critical | ❌ No (bypasses) |
-
-### Control Labels
-
-| Label | Purpose | Scope |
-|-------|---------|-------|
-| `merge-queue/stop` | Pause merge queue | This repository only |
-| `merge-queue/conflict` | Rebase conflict detected | Auto-added by Tide |
+| Label | Purpose | Where to Add |
+|-------|---------|--------------|
+| `merge-queue/add` | Add PR to merge queue | On PRs |
+| `merge-queue/stop` | Stop all merging | On Issues |
 
 ## 🚀 How to Use
 
 ### Normal Merge Process
 1. **Create PR** and get required approvals
-2. **Wait for CI** - all status checks must pass
+2. **Wait for CI** - all status checks must pass (enforced by GitHub branch protection)
 3. **Add label**: `merge-queue/add`
 4. **Tide automatically** rebases + squashes + merges
 
-### High Priority Merge
-- Add label: `merge-queue/add-high`
-- Merges before normal priority PRs
-- Still respects repository stop controls
-- Waits for all CI checks to pass
-
-### Emergency/Critical Merge
-- Add label: `merge-queue/add-critical`
-- **Bypasses repository stop** - merges even if repo is paused
-- Highest priority - merges immediately when CI passes
-- Use sparingly for hotfixes and critical issues
-
-### Repository-Specific Emergency Stop
-- Add label: `merge-queue/stop` to **any PR in the repository**
-- **Pauses merge queue for this repository only**
-- Other repositories continue merging normally
-- Critical PRs (`merge-queue/add-critical`) still merge
-- **Manually remove** the label to resume this repository
+### Emergency Stop (Global)
+1. **Create an issue** in your repository
+2. **Add label**: `merge-queue/stop` to the issue
+3. **All merging stops** immediately
+4. **Close issue** or **remove label** to resume all merging
 
 ## 📊 Common Scenarios
 
@@ -55,94 +32,89 @@ This guide explains how to control the Tide merge queue using GitHub labels.
 3. Tide rebases → Tide merges → Done ✅
 ```
 
-### Scenario 2: Urgent Bug Fix
+### Scenario 2: Emergency Stop
 ```
-1. Hotfix PR created → CI running  
-2. CI passes ✅ → Add `merge-queue/add-high`
-3. Jumps ahead of normal PRs → Merges next ✅
-```
-
-### Scenario 3: Critical Production Issue
-```
-1. Emergency PR created → CI running
-2. CI passes ✅ → Add `merge-queue/add-critical`
-3. Bypasses any stops → Merges immediately ✅
+1. Issue detected → Create GitHub issue
+2. Add `merge-queue/stop` label to issue
+3. All merging stops ⏸️
+4. Fix issue → Remove label or close issue
+5. Merging resumes ▶️
 ```
 
-### Scenario 4: Repository-Specific Freeze
-```
-1. Issue detected in this repository
-2. Add `merge-queue/stop` to any PR in this repo
-3. This repository pauses ⏸️ (other repos continue)
-4. Critical PRs still merge with `merge-queue/add-critical`
-5. Remove `merge-queue/stop` to resume this repository
-```
-
-### Scenario 5: Rebase Conflict
+### Scenario 3: Rebase Conflict
 ```
 1. PR in queue → Tide attempts rebase
-2. Conflict detected → Tide adds `merge-queue/conflict`
-3. PR removed from queue → Manual resolution needed
-4. Fix conflicts → Remove `merge-queue/conflict` → Re-add action label
+2. Conflict detected → Tide skips PR and updates status
+3. Developer fixes conflicts → Pushes new commit
+4. Tide automatically retries → Merges when clean ✅
 ```
 
-## 🔄 Queue Behavior
+## 🔄 How It Works
 
-### Priority Order
-1. **Critical** (`merge-queue/add-critical`) - bypasses repository stops
-2. **High** (`merge-queue/add-high`) - respects repository stops  
-3. **Normal** (`merge-queue/add`) - respects repository stops
+### GitHub Branch Protection Integration
+- **Tide respects** all your existing GitHub branch protection rules
+- **No duplication** of CI check names in Tide configuration
+- **Automatic detection** of required status checks, reviews, etc.
+- **Consistent behavior** between manual merges and Tide merges
 
-### Repository-Specific Controls
-- Each repository has independent queue control
-- `merge-queue/stop` only affects the repository where it's added
-- Multiple repositories can be stopped independently
-- Critical PRs bypass repository-specific stops
+### Automatic Conflict Handling
+- **Tide detects conflicts** during rebase attempts
+- **Updates PR status** to show conflict information
+- **No manual labels** needed - just fix conflicts and push
+- **Automatic retry** on next sync cycle
 
-### Automatic Actions
-- **Conflict Detection**: Tide adds `merge-queue/conflict` on rebase failures
-- **Queue Removal**: PRs with conflicts are automatically removed from queue
-- **Status Updates**: Tide updates GitHub status checks during processing
+### Global Emergency Control
+- **Issue-based stop** - add `merge-queue/stop` to any issue
+- **Repository-wide pause** - affects all PRs in the repository
+- **Simple resume** - remove label or close issue
 
 ## ⚠️ Important Notes
 
 ### Label Management
-- **One action label per PR** - don't mix `add`, `add-high`, `add-critical`
-- **Repository-specific stop** - affects only the repository where added
-- **Manual conflict resolution** - remove `merge-queue/conflict` after fixing
-- **Critical bypass** - use `merge-queue/add-critical` responsibly
+- **One label per PR** - just `merge-queue/add`
+- **Issue-based stop** - `merge-queue/stop` goes on issues, not PRs
+- **No conflict labels** - Tide handles conflicts automatically
+- **GitHub branch protection** handles all CI requirements
 
 ### CI Requirements
-- **All status checks must pass** before any merge
-- **Different repos have different CI checks** (pytest, ruff, jest, etc.)
-- **Tide waits for all required checks** regardless of priority level
+- **Set up in GitHub** - use branch protection rules
+- **Automatic enforcement** - Tide respects these automatically
+- **No configuration duplication** - define CI checks once in GitHub
 
-### Repository Isolation
-- **Independent queues** - each repository processes separately
-- **Shared priority system** - high priority from any repo goes first
-- **Repository-specific stops** - pause individual repos without affecting others
+### Repository Behavior
+- **Single queue per repository** - all PRs processed in order
+- **Automatic rebase** - keeps PRs up to date with main branch
+- **Squash merge** - clean commit history
 
 ## 🔍 Monitoring
 
 ### Check Queue Status
 - **PR Status Checks**: Look for Tide status on GitHub PR
-- **Labels**: Current labels show PR state and priority
+- **Labels**: Current labels show PR state
 - **Logs**: `kubectl logs -n prow deployment/tide -f`
 
 ### Troubleshooting
-- **PR not merging**: Check CI status and required labels
-- **Conflicts**: Look for `merge-queue/conflict` label
-- **Repository paused**: Check for `merge-queue/stop` label in any PR
-- **Wrong priority**: Verify only one action label is present
+- **PR not merging**: Check CI status and GitHub branch protection
+- **Conflicts**: Look at PR status - Tide will show conflict information
+- **Queue paused**: Check for `merge-queue/stop` label on any issue
+- **CI not passing**: Fix in GitHub branch protection settings
 
 ## 🎯 Quick Reference
 
-| Want to... | Add this label |
-|------------|----------------|
-| Merge normally | `merge-queue/add` |
-| Merge with high priority | `merge-queue/add-high` |
-| Emergency merge (bypass stop) | `merge-queue/add-critical` |
-| Pause this repository | `merge-queue/stop` |
-| Resume after conflict | Remove `merge-queue/conflict`, re-add action label |
+| Want to... | Do this |
+|------------|---------|
+| Merge a PR | Add `merge-queue/add` label to PR |
+| Stop all merging | Add `merge-queue/stop` label to any issue |
+| Resume merging | Remove `merge-queue/stop` label or close issue |
+| Fix conflicts | Push new commits, Tide will retry automatically |
+| Add CI checks | Update GitHub branch protection rules |
 
-Remember: Repository stops are **repository-specific** - stopping one repo doesn't affect others! 
+## 💡 Best Practices
+
+1. **Use GitHub branch protection** for all CI requirements
+2. **Create issues for stops** - easier to track and communicate
+3. **Document stop reasons** in issue description
+4. **Remove stops promptly** when issues are resolved
+5. **Let Tide handle conflicts** - no manual intervention needed
+
+This system is designed to be simple, reliable, and integrate seamlessly with your existing GitHub workflow! 
