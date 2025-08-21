@@ -3,28 +3,16 @@ github:
   hmacTokenSecretName: "github-hmac"
   org: "kravch3nko"
   repo: "test-tide-merge-queue"
+  org: "kravch3nko"
+  repo: "test-tide-merge-queue"
 
 repositories:
   - org: "kravch3nko"
     name: "test-tide-merge-queue"
-    ciStatusChecks:
-      - "ci/test"
-      - "ci/lint"
-      - "ci/build"
 
 tide:
   image: "gcr.io/k8s-prow/tide:latest"
   mergeMethod: rebase
   requiredLabels: 
     - "merge-queue/add"
-  missingLabels: 
-    - "merge-queue/conflict"
-    - "merge-queue/stop"
-  defaultCiStatusChecks:
-    - "ci/test"
-    - "ci/lint"
-
-env:
-  GITHUB_ORG: ""
-  GITHUB_REPO: ""
-  CI_STATUS_CHECKS: ""
+  

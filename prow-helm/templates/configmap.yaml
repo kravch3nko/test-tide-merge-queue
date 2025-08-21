@@ -11,6 +11,7 @@ data:
       
       merge_method:
         {{- range .Values.repositories }}
+        {{- range .Values.repositories }}
         {{ .org }}/{{ .name }}: {{ $.Values.tide.mergeMethod }}
         {{- end }}
       squash_label: ""
@@ -18,8 +19,8 @@ data:
       
       queries:
       {{- range .Values.repositories }}
+      {{- range .Values.repositories }}
       {{- $repoName := printf "%s/%s" .org .name }}
-      {{- $ciChecks := .ciStatusChecks | default $.Values.tide.defaultCiStatusChecks }}
       
       # Merge Queue for {{ $repoName }}
       - repos:
@@ -27,34 +28,15 @@ data:
         labels:
         - "merge-queue/add"
         missingLabels: []
-        requiredStatusChecks:
-        {{- range $ciChecks }}
-        - {{ . }}
-        {{- end }}
         includeDrafts: false
       {{- end }}
-      
-      context_options:
-        {{- $allCiChecks := list }}
-        {{- range .Values.repositories }}
-          {{- $ciChecks := .ciStatusChecks | default $.Values.tide.defaultCiStatusChecks }}
-          {{- range $ciChecks }}
-            {{- if not (has . $allCiChecks) }}
-              {{- $allCiChecks = append $allCiChecks . }}
-            {{- end }}
-          {{- end }}
-        {{- end }}
-        {{- range $allCiChecks }}
-        {{ . }}:
-          description: "CI check: {{ . }}"
-          required: true
-        {{- end }}
       
       max_goroutines: 20
       
     github:
       orgs:
       {{- $orgMap := dict }}
+      {{- range .Values.repositories }}
       {{- range .Values.repositories }}
         {{- if not (hasKey $orgMap .org) }}
           {{- $orgMap = set $orgMap .org (list) }}
