@@ -1,1 +1,13 @@
-# Tide doesn't expose HTTP endpoints for external access
+apiVersion: v1
+kind: Service
+metadata:
+  name: hook
+  namespace: prow
+spec:
+  selector:
+    app: hook
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8888
+  type: ClusterIP

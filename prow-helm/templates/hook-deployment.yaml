@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hook
+  namespace: prow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hook
+  template:
+    metadata:
+      labels:
+        app: hook
+    spec:
+      serviceAccountName: tide
+      containers:
+      - name: hook
+        image: gcr.io/k8s-prow/hook:latest
+        args:
+        - --config-path=/etc/config/config.yaml
+        - --github-token-path=/etc/github/token
+        - --hmac-secret-file=/etc/github-hmac/hmac
+        - --plugin-config=/etc/plugins/plugins.yaml
+        - --dry-run=false
+        ports:
+        - name: http
+          containerPort: 8888
+        volumeMounts:
+        - name: config
+          mountPath: /etc/config
+        - name: github-token
+          mountPath: /etc/github
+        - name: github-hmac
+          mountPath: /etc/github-hmac
+        - name: plugins
+          mountPath: /etc/plugins
+        env:
+        - name: GITHUB_TOKEN_PATH
+          value: /etc/github/token
+      volumes:
+      - name: config
+        configMap:
+          name: prow-config
+      - name: github-token
+        secret:
+          secretName: {{ .Values.github.tokenSecretName }}
+      - name: github-hmac
+        secret:
+          secretName: {{ .Values.github.hmacTokenSecretName }}
+      - name: plugins
+        configMap:
+          name: prow-plugins 
