@@ -11,14 +11,12 @@ data:
       
       merge_method:
         {{- range .Values.repositories }}
-        {{- range .Values.repositories }}
         {{ .org }}/{{ .name }}: {{ $.Values.tide.mergeMethod }}
         {{- end }}
       squash_label: ""
       blocker_label: "merge-queue/stop"
       
       queries:
-      {{- range .Values.repositories }}
       {{- range .Values.repositories }}
       {{- $repoName := printf "%s/%s" .org .name }}
       
@@ -36,7 +34,6 @@ data:
     github:
       orgs:
       {{- $orgMap := dict }}
-      {{- range .Values.repositories }}
       {{- range .Values.repositories }}
         {{- if not (hasKey $orgMap .org) }}
           {{- $orgMap = set $orgMap .org (list) }}

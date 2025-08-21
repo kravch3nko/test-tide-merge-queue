@@ -1,16 +1,14 @@
-# 🚀 Tide Merge Queue
+# �� Tide Merge Queue
 
-Production-ready merge queue for GitHub repositories using Tide with Bamboo CI integration.
+Simple merge queue for GitHub repositories using Tide.
 
 ## ✨ Features
 
-- **Label-based control**: Simple GitHub labels replace merge buttons
-- **Priority system**: Normal, high priority, and critical emergency merges
-- **Conflict detection**: Automatic rebase with conflict handling
-- **Emergency controls**: Pause/resume entire queue with one label
-- **Slack notifications**: Optional team alerts for queue status changes
-- **Bamboo CI integration**: Works with existing CI/CD pipeline
+- **Simple label control**: One label to merge PRs
+- **Global emergency stop**: Pause all merging with one label on an issue
+- **GitHub branch protection**: Respects your existing CI requirements
 - **Multi-repository support**: Single queue for multiple repositories
+- **Automatic conflict handling**: No manual label management needed
 
 ## 🚀 Quick Start
 
@@ -35,140 +33,58 @@ kubectl create secret generic github-hmac \
   -n prow
 ```
 
-### 3. Deploy with Configuration
+### 3. Configure Repository
 
-You can configure GitHub settings in multiple ways:
-
-#### Option A: Single Repository (Traditional)
-```bash
-# Set your configuration
-export GITHUB_ORG="your-org"
-export GITHUB_REPO="your-repo" 
-export CI_STATUS_CHECK="bamboo/build"
-
-# Deploy with environment variables
-helm upgrade --install prow ./prow-helm \
-  --namespace prow \
-  --set github.org="$GITHUB_ORG" \
-  --set github.repo="$GITHUB_REPO" \
-  --set tide.requiredStatusChecks[0]="$CI_STATUS_CHECK" \
-  --wait
-```
-
-#### Option B: Multiple Repositories (Recommended)
-```bash
-# Set your configuration
-export GITHUB_ORG="your-org"
-export GITHUB_REPOS="repo1,repo2,repo3"  # Comma-separated list
-export CI_STATUS_CHECK="bamboo/build"
-
-# Deploy with multiple repositories
-helm upgrade --install prow ./prow-helm \
-  --namespace prow \
-  --set github.org="$GITHUB_ORG" \
-  --set env.GITHUB_REPOS="$GITHUB_REPOS" \
-  --set tide.requiredStatusChecks[0]="$CI_STATUS_CHECK" \
-  --wait
-```
-
-#### Option C: Edit values.yaml
 Edit `prow-helm/values.yaml`:
 ```yaml
-github:
-  org: "your-org"
-  repos:
-    - "repo1"
-    - "repo2"
-    - "repo3"
-  
-tide:
-  requiredStatusChecks: 
-    - "bamboo/build"
+repositories:
+  - org: "your-org"
+    name: "your-repo"
 ```
 
-Then deploy:
+### 4. Deploy
+
 ```bash
 helm install prow ./prow-helm -n prow
 ```
 
-### 4. Create GitHub Labels
+### 5. Create GitHub Labels
 
-Create these labels in **ALL** your repositories:
+Create these labels in your repository:
 
 ```bash
 merge-queue/add          - #0e8a16 (green)
-merge-queue/add-high     - #ff9500 (orange) 
-merge-queue/add-critical - #d73a4a (red)
 merge-queue/stop         - #d73a4a (red)
-merge-queue/conflict     - #fbca04 (yellow)
 ```
 
 ## 📋 Usage
 
 ### Normal Merge
-1. Create PR in any repository, get approval, wait for CI ✅
+1. Create PR, get approval, wait for CI ✅
 2. Add label: `merge-queue/add`
 3. Tide automatically rebases + squashes + merges
 
-### High Priority
-- Add label: `merge-queue/add-high`
-- Merges before normal PRs but respects queue pause
+### Emergency Stop
+1. Create an issue in your repository
+2. Add label: `merge-queue/stop` to the issue
+3. All merging stops immediately
+4. Close issue or remove label to resume
 
-### Emergency (Critical)
-- Add label: `merge-queue/add-critical`  
-- Bypasses queue pause, merges immediately
+## 🏢 Multi-Repository Setup
 
-### Emergency Stop (Global)
-- Add label: `merge-queue/stop` to **any PR in any repository**
-- Pauses **entire queue across all repositories** (except critical PRs)
-- Manually remove label to resume all queues
+Add multiple repositories to `prow-helm/values.yaml`:
 
-## 🏢 Multi-Repository Features
-
-### Global Queue Management
-- **Single Tide instance** manages multiple repositories
-- **Shared priority system** across all repos
-- **Global emergency controls** - stop all repos with one label
-- **Consistent labeling** across all repositories
-
-### Per-Repository Flexibility
-- Each repository can have different branch protection rules
-- Repository-specific CI requirements supported
-- Independent conflict resolution per repository
-- Repository-specific Slack notifications
-
-### Cross-Repository Priority
-- High priority PRs from any repo merge before normal PRs from any repo
-- Critical PRs from any repo bypass global queue pause
-- Fair processing across repositories
-
-## 🔔 Slack Notifications (Optional)
-
-See `SLACK_SETUP.md` for complete setup instructions.
-
-## 🧪 Testing
-
-See `TESTING_GUIDE.md` for comprehensive testing instructions.
-
-## 📁 Project Structure
-
+```yaml
+repositories:
+  - org: "my-org"
+    name: "backend"
+  - org: "my-org"
+    name: "frontend"
+  - org: "partner-org"
+    name: "shared-lib"
 ```
-├── prow-helm/                    # Helm chart
-│   ├── templates/
-│   │   ├── configmap.yaml       # Tide configuration
-│   │   ├── rbac.yaml            # Kubernetes permissions
-│   │   ├── services.yaml        # Kubernetes services
-│   │   └── tide-only-deployment.yaml # Tide deployment
-│   ├── Chart.yaml               # Helm chart metadata
-│   └── values.yaml              # Configuration values
-├── .github/workflows/
-│   └── merge-queue-notifications.yml # Slack notifications
-├── deploy-example.sh            # Multi-repo deployment script
-├── TIDE_GITHUB_CONTROLS.md     # User guide
-├── SLACK_SETUP.md              # Slack setup guide
-├── TESTING_GUIDE.md            # Testing instructions
-└── README.md                   # This file
-```
+
+Each repository operates independently but shares the same Tide instance.
 
 ## 🔧 Configuration
 
@@ -176,32 +92,16 @@ See `TESTING_GUIDE.md` for comprehensive testing instructions.
 
 - **Merge Method**: `rebase` (rebase + squash)
 - **Sync Period**: 30 seconds
-- **Conflict Handling**: Automatic detection with `merge-queue/conflict` label
-- **Branch Protection**: Respects GitHub's required approvals per repository
+- **Branch Protection**: Respects GitHub's CI requirements automatically
 
-### Environment Variable Configuration
+### GitHub Branch Protection
 
-You can override any configuration value using Helm's `--set` flags:
+Set up branch protection rules in GitHub to enforce:
+- Required status checks (CI/CD)
+- Required reviews
+- Up-to-date branches
 
-```bash
-# Single repository
---set github.org="my-org"
---set github.repo="my-repo"
-
-# Multiple repositories
---set github.org="my-org"
---set env.GITHUB_REPOS="repo1,repo2,repo3"
-
-# CI configuration  
---set tide.requiredStatusChecks[0]="bamboo/build"
---set tide.requiredStatusChecks[1]="bamboo/test"
-
-# Merge settings
---set tide.mergeMethod="squash"
-
-# Image version
---set tide.image="gcr.io/k8s-prow/tide:v20240101"
-```
+Tide will automatically respect these rules - no need to duplicate CI check names in the configuration.
 
 ## 🛠️ Operations
 
@@ -211,55 +111,34 @@ kubectl get pods -n prow
 kubectl logs -n prow deployment/tide -f
 ```
 
-### Update Configuration
-```bash
-# Add new repository
-helm upgrade prow ./prow-helm \
-  --namespace prow \
-  --set env.GITHUB_REPOS="repo1,repo2,repo3,new-repo"
-
-# Change organization
-helm upgrade prow ./prow-helm \
-  --namespace prow \
-  --set github.org="new-org"
-```
+### Add New Repository
+1. Edit `prow-helm/values.yaml`
+2. Add repository to the list
+3. Run: `helm upgrade prow ./prow-helm -n prow`
 
 ### Troubleshooting
 - Check pod logs for errors
-- Verify GitHub token has access to **all** repositories
-- Confirm CI status check names match across repositories
-- Ensure labels exist in **all** repositories
+- Verify GitHub token has access to all repositories
+- Ensure labels exist in all repositories
 
 ## 🔒 Security
 
 - GitHub token stored as Kubernetes secret
 - RBAC permissions limited to necessary resources
-- No external endpoints exposed
-- Webhook HMAC validation supported
-- Single token manages all repositories (ensure proper permissions)
+- No external endpoints exposed (unless using webhooks)
 
 ## 📚 Documentation
 
 - **User Guide**: `TIDE_GITHUB_CONTROLS.md`
-- **Slack Setup**: `SLACK_SETUP.md`
-- **Testing Guide**: `TESTING_GUIDE.md`
 - **Tide Documentation**: https://docs.prow.k8s.io/docs/components/tide/
 
-## 🤝 Contributing
+## 🎯 Simple and Clean
 
-1. Test changes in development environment
-2. Update documentation if needed
-3. Follow semantic versioning for releases
-
-## 📄 License
-
-This project is licensed under the MIT License. 
-
-
-
-helm upgrade prow ./prow-helm \
-  --namespace prow \
-  --set github.org="new-org" \
-  --set github.repo="new-repo"
+This setup provides a minimal, maintainable merge queue that:
+- Uses only 2 labels
+- Respects GitHub branch protection automatically  
+- Requires no CI check configuration duplication
+- Provides global emergency controls
+- Scales to multiple repositories effortlessly
 
 
