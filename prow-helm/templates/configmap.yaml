@@ -9,52 +9,19 @@ data:
       sync_period: "30s"
       status_update_period: "30s"
       
-      {{- /* Determine repository configuration */ -}}
-      {{- $repoList := list }}
-      {{- if .Values.repositories }}
-        {{- /* New multi-repo format */ -}}
-        {{- $repoList = .Values.repositories }}
-      {{- else if .Values.env.GITHUB_ORG }}
-        {{- /* Single repo from env vars */ -}}
-        {{- $repo := dict "org" (.Values.env.GITHUB_ORG) "name" (.Values.env.GITHUB_REPO | default .Values.github.repo) }}
-        {{- if .Values.env.CI_STATUS_CHECKS }}
-          {{- $repo = set $repo "ciStatusChecks" (splitList "," .Values.env.CI_STATUS_CHECKS) }}
-        {{- else }}
-          {{- $repo = set $repo "ciStatusChecks" .Values.tide.defaultCiStatusChecks }}
-        {{- end }}
-        {{- $repoList = list $repo }}
-      {{- else }}
-        {{- /* Legacy single repo format */ -}}
-        {{- $repo := dict "org" .Values.github.org "name" .Values.github.repo "ciStatusChecks" .Values.tide.defaultCiStatusChecks }}
-        {{- $repoList = list $repo }}
-      {{- end }}
-      
       merge_method:
-        {{- range $repoList }}
+        {{- range .Values.repositories }}
         {{ .org }}/{{ .name }}: {{ $.Values.tide.mergeMethod }}
         {{- end }}
       squash_label: ""
       blocker_label: "merge-queue/stop"
       
       queries:
-      {{- /* Generate separate query for each repository to handle different CI checks */ -}}
-      {{- range $repoList }}
+      {{- range .Values.repositories }}
       {{- $repoName := printf "%s/%s" .org .name }}
       {{- $ciChecks := .ciStatusChecks | default $.Values.tide.defaultCiStatusChecks }}
       
-      # High Priority for {{ $repoName }}
-      - repos:
-        - {{ $repoName }}
-        labels:
-        - "merge-queue/add-high"
-        missingLabels: []
-        requiredStatusChecks:
-        {{- range $ciChecks }}
-        - {{ . }}
-        {{- end }}
-        includeDrafts: false
-      
-      # Normal Priority for {{ $repoName }}
+      # Merge Queue for {{ $repoName }}
       - repos:
         - {{ $repoName }}
         labels:
@@ -69,7 +36,7 @@ data:
       
       context_options:
         {{- $allCiChecks := list }}
-        {{- range $repoList }}
+        {{- range .Values.repositories }}
           {{- $ciChecks := .ciStatusChecks | default $.Values.tide.defaultCiStatusChecks }}
           {{- range $ciChecks }}
             {{- if not (has . $allCiChecks) }}
@@ -88,7 +55,7 @@ data:
     github:
       orgs:
       {{- $orgMap := dict }}
-      {{- range $repoList }}
+      {{- range .Values.repositories }}
         {{- if not (hasKey $orgMap .org) }}
           {{- $orgMap = set $orgMap .org (list) }}
         {{- end }}
