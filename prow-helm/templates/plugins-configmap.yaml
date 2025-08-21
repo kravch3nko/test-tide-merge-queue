@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prow-plugins
+  namespace: prow
+data:
+  plugins.yaml: |
+    plugins:
+      kravch3nko/test-tide-merge-queue:
+      - label
+      - hold
+      - wip
+      - lifecycle
+      - override
+      - size
+      - trigger
