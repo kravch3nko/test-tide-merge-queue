@@ -1,0 +1,75 @@
+github:
+  # GitHub settings - can be overridden by environment variables
+  tokenSecretName: "github-token"
+  hmacTokenSecretName: "github-hmac"
+
+# Multi-repository configuration (recommended approach)
+repositories:
+  # Python backend service
+  - org: "your-org"
+    name: "backend-api"
+    ciStatusChecks:
+      - "ci/pytest"      # Your pytest tests
+      - "ci/ruff"        # Your ruff linting
+      - "ci/mypy"        # Type checking
+      - "ci/coverage"    # Code coverage
+      
+  # Frontend application  
+  - org: "your-org"
+    name: "web-frontend"
+    ciStatusChecks:
+      - "ci/jest"        # Frontend tests
+      - "ci/eslint"      # JS/TS linting
+      - "ci/build"       # Build verification
+      
+  # Data processing service
+  - org: "your-org"
+    name: "data-processor"
+    ciStatusChecks:
+      - "ci/pytest"      # Python tests
+      - "ci/ruff"        # Python linting
+      - "ci/integration"  # Integration tests
+      
+  # Infrastructure as code
+  - org: "your-org"
+    name: "terraform-infra"
+    ciStatusChecks:
+      - "ci/terraform-validate"
+      - "ci/terraform-plan"
+      - "ci/security-scan"
+
+  # Cross-org example (if you work with external teams)
+  # - org: "partner-company"
+  #   name: "shared-library"
+  #   ciStatusChecks:
+  #     - "bamboo/build"
+  #     - "bamboo/test"
+
+# Legacy single repo support (for backward compatibility)
+github:
+  org: "your-username"  # REQUIRED: Replace with your GitHub org/username
+  repo: "tide-test-repo"  # REQUIRED: Replace with your repository name
+
+tide:
+  image: "gcr.io/k8s-prow/tide:latest"
+  mergeMethod: rebase
+  
+  # Default settings for all repositories
+  requiredLabels: 
+    - "merge-queue/add"
+    
+  missingLabels: 
+    - "merge-queue/conflict"
+    - "merge-queue/stop"
+    
+  # Default CI status checks (used when repo doesn't specify its own)
+  defaultCiStatusChecks:
+    - "ci/pytest"
+    - "ci/ruff"
+
+# Environment variable overrides (used in deployment)
+env:
+  # Set these environment variables to override values above
+  # GITHUB_ORG: "my-org"
+  # GITHUB_REPO: "my-repo"  # For single repo mode
+  # CI_STATUS_CHECKS: "ci/pytest,ci/ruff,ci/build"  # Comma-separated list

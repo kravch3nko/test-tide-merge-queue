@@ -13,21 +13,26 @@ spec:
       labels:
         app: tide
     spec:
+      serviceAccountName: tide
       containers:
       - name: tide
         image: {{ .Values.tide.image }}
         args:
         - --config-path=/etc/config/config.yaml
         - --github-token-path=/etc/github/token
+        - --dry-run=false
         volumeMounts:
         - name: config
           mountPath: /etc/config
         - name: github-token
           mountPath: /etc/github
+        env:
+        - name: GITHUB_TOKEN_PATH
+          value: /etc/github/token
       volumes:
       - name: config
         configMap:
           name: prow-config
       - name: github-token
         secret:
-          secretName: {{ .Values.github.tokenSecretName }}
+          secretName: {{ .Values.github.tokenSecretName }} 

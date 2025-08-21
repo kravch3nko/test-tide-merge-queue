@@ -6,19 +6,117 @@ metadata:
 data:
   config.yaml: |
     tide:
+      sync_period: "30s"
+      status_update_period: "30s"
+      
+      {{- /* Determine repository configuration */ -}}
+      {{- $repoList := list }}
+      {{- if .Values.repositories }}
+        {{- /* New multi-repo format */ -}}
+        {{- $repoList = .Values.repositories }}
+      {{- else if .Values.env.GITHUB_ORG }}
+        {{- /* Single repo from env vars */ -}}
+        {{- $repo := dict "org" (.Values.env.GITHUB_ORG) "name" (.Values.env.GITHUB_REPO | default .Values.github.repo) }}
+        {{- if .Values.env.CI_STATUS_CHECKS }}
+          {{- $repo = set $repo "ciStatusChecks" (splitList "," .Values.env.CI_STATUS_CHECKS) }}
+        {{- else }}
+          {{- $repo = set $repo "ciStatusChecks" .Values.tide.defaultCiStatusChecks }}
+        {{- end }}
+        {{- $repoList = list $repo }}
+      {{- else }}
+        {{- /* Legacy single repo format */ -}}
+        {{- $repo := dict "org" .Values.github.org "name" .Values.github.repo "ciStatusChecks" .Values.tide.defaultCiStatusChecks }}
+        {{- $repoList = list $repo }}
+      {{- end }}
+      
       merge_method:
-        {{ .Values.github.org }}/{{ .Values.github.repo }}: {{ .Values.tide.mergeMethod }}
+        {{- range $repoList }}
+        {{ .org }}/{{ .name }}: {{ $.Values.tide.mergeMethod }}
+        {{- end }}
+      squash_label: ""
+      blocker_label: ""
+      
       queries:
+      {{- /* Generate separate query for each repository to handle different CI checks */ -}}
+      {{- range $repoList }}
+      {{- $repoName := printf "%s/%s" .org .name }}
+      {{- $ciChecks := .ciStatusChecks | default $.Values.tide.defaultCiStatusChecks }}
+      
+      # Critical Priority for {{ $repoName }} (bypasses repo stop)
       - repos:
-        - {{ .Values.github.org }}/{{ .Values.github.repo }}
+        - {{ $repoName }}
         labels:
-        {{- range .Values.tide.requiredLabels }}
-        - {{ . }}
-        {{- end }}
+        - "merge-queue/add-critical"
         missingLabels:
-        {{- range .Values.tide.missingLabels }}
+        - "merge-queue/conflict"
+        requiredStatusChecks:
+        {{- range $ciChecks }}
         - {{ . }}
         {{- end }}
+        includeDrafts: false
+      
+      # High Priority for {{ $repoName }} (respects repo stop)
+      - repos:
+        - {{ $repoName }}
+        labels:
+        - "merge-queue/add-high"
+        missingLabels:
+        - "merge-queue/conflict"
+        - "merge-queue/stop"
+        requiredStatusChecks:
+        {{- range $ciChecks }}
+        - {{ . }}
+        {{- end }}
+        includeDrafts: false
+      
+      # Normal Priority for {{ $repoName }} (respects repo stop)
+      - repos:
+        - {{ $repoName }}
+        labels:
+        - "merge-queue/add"
+        missingLabels:
+        - "merge-queue/conflict"
+        - "merge-queue/stop"
+        requiredStatusChecks:
+        {{- range $ciChecks }}
+        - {{ . }}
+        {{- end }}
+        includeDrafts: false
+      {{- end }}
+      
+      context_options:
+        {{- $allCiChecks := list }}
+        {{- range $repoList }}
+          {{- $ciChecks := .ciStatusChecks | default $.Values.tide.defaultCiStatusChecks }}
+          {{- range $ciChecks }}
+            {{- if not (has . $allCiChecks) }}
+              {{- $allCiChecks = append $allCiChecks . }}
+            {{- end }}
+          {{- end }}
+        {{- end }}
+        {{- range $allCiChecks }}
+        {{ . }}:
+          description: "CI check: {{ . }}"
+          required: true
+        {{- end }}
+      
+      max_goroutines: 20
+      
     github:
       orgs:
-      - name: {{ .Values.github.org }}
+      {{- $orgMap := dict }}
+      {{- range $repoList }}
+        {{- if not (hasKey $orgMap .org) }}
+          {{- $orgMap = set $orgMap .org (list) }}
+        {{- end }}
+        {{- $repos := index $orgMap .org }}
+        {{- $repos = append $repos .name }}
+        {{- $orgMap = set $orgMap .org $repos }}
+      {{- end }}
+      {{- range $org, $repos := $orgMap }}
+      - name: {{ $org }}
+        repos:
+        {{- range $repos }}
+        - name: {{ . }}
+        {{- end }}
+      {{- end }}
