@@ -42,39 +42,24 @@ data:
       {{- $repoName := printf "%s/%s" .org .name }}
       {{- $ciChecks := .ciStatusChecks | default $.Values.tide.defaultCiStatusChecks }}
       
-      # Critical Priority for {{ $repoName }} (bypasses global stop)
-      - repos:
-        - {{ $repoName }}
-        labels:
-        - "merge-queue/add-critical"
-        missingLabels:
-        - "merge-queue/conflict"
-        requiredStatusChecks:
-        {{- range $ciChecks }}
-        - {{ . }}
-        {{- end }}
-        includeDrafts: false
-      
-      # High Priority for {{ $repoName }} (respects global stop)
+      # High Priority for {{ $repoName }}
       - repos:
         - {{ $repoName }}
         labels:
         - "merge-queue/add-high"
-        missingLabels:
-        - "merge-queue/conflict"
+        missingLabels: []
         requiredStatusChecks:
         {{- range $ciChecks }}
         - {{ . }}
         {{- end }}
         includeDrafts: false
       
-      # Normal Priority for {{ $repoName }} (respects global stop)
+      # Normal Priority for {{ $repoName }}
       - repos:
         - {{ $repoName }}
         labels:
         - "merge-queue/add"
-        missingLabels:
-        - "merge-queue/conflict"
+        missingLabels: []
         requiredStatusChecks:
         {{- range $ciChecks }}
         - {{ . }}
