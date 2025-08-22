@@ -1,10 +1,6 @@
 github:
   tokenSecretName: "github-token"
   hmacTokenSecretName: "github-hmac"
-  org: "kravch3nko"
-  repo: "test-tide-merge-queue"
-  org: "kravch3nko"
-  repo: "test-tide-merge-queue"
 
 repositories:
   - org: "kravch3nko"
