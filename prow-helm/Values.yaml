@@ -8,7 +8,7 @@ repositories:
 
 tide:
   image: "gcr.io/k8s-prow/tide:latest"
-  mergeMethod: rebase
+  mergeMethod: squash
   requiredLabels: 
     - "merge-queue/add"
   reviewApprovedRequired: true
