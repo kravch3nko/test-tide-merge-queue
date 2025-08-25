@@ -140,3 +140,4 @@ This setup provides a minimal, maintainable merge queue that:
 - Requires no CI check configuration duplication
 - Provides global emergency controls
 - Scales to multiple repositories effortlessly
+
