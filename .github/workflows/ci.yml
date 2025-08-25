@@ -25,13 +25,7 @@ jobs:
         run: |
           echo "Running linter..."
           sleep 3
-          # 50% chance of failure
-          if [ $((RANDOM % 2)) -eq 0 ]; then
-            echo "❌ Linting failed!"
-            exit 1
-          else
-            echo "✅ Linting passed!"
-          fi
+          echo "✅ Linting passed!"
 
   build:
     runs-on: ubuntu-latest
