@@ -8,6 +8,7 @@ data:
     tide:
       sync_period: "30s"
       status_update_period: "30s"
+      batch_size_limit: {{ .Values.tide.batchSizeLimit }}
       
       merge_method:
         {{- range .Values.repositories }}

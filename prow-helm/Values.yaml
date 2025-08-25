@@ -12,3 +12,4 @@ tide:
   requiredLabels: 
     - "merge-queue/add"
   reviewApprovedRequired: true
+  batchSizeLimit: 1  # Disables batching
