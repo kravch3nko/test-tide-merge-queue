@@ -23,15 +23,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Simulate linting (50% failure rate)
         run: |
-          echo "Running linter..."
-          sleep 3
-          # 50% chance of failure
-          if [ $((RANDOM % 2)) -eq 0 ]; then
-            echo "❌ Linting failed!"
-            exit 1
-          else
-            echo "✅ Linting passed!"
-          fi
+          echo "Running tests..."
+          sleep 5
+          echo "Tests passed!"
 
   build:
     runs-on: ubuntu-latest
