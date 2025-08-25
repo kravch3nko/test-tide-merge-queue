@@ -111,6 +111,12 @@ kubectl get pods -n prow
 kubectl logs -n prow deployment/tide -f
 ```
 
+### Upgrade helm chart
+```
+helm upgrade --install prow ./prow-helm --namespace prow --wait
+kubectl rollout restart deployment -n prow
+```
+
 ### Add New Repository
 1. Edit `prow-helm/values.yaml`
 2. Add repository to the list
