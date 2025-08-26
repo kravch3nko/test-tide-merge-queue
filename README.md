@@ -45,9 +45,12 @@ helm install prow ./prow-helm -n prow -f prow-helm/Values.yaml
 
 ### Merging PRs
 1. Create PR → Get approvals → Pass CI
+   - Review approvals are required by default
+   - At least one approval is needed to proceed
 2. Add `merge-queue/add` label
 3. Tide automatically:
    - Checks branch protection rules
+   - Verifies review approvals
    - Rebases PR if needed
    - Squash merges when ready
 
@@ -72,30 +75,38 @@ helm install prow ./prow-helm -n prow -f prow-helm/Values.yaml
 
 ### Key Settings
 - **Merge Method**: Squash (configurable per repo)
-- **Sync Period**: 30 seconds
-- **Batch Size**: 1 (no batching)
+- **Sync Period**: 10 seconds
+- **Batch Size**: Configurable per organization (set to -1 for unlimited batching)
 - **Branch Protection**: Automatic integration
 
 ### Multi-Repository Setup
 Add repositories to `values.yaml`:
 ```yaml
 tide:
-  config:
-    merge_method:
-      org1/repo1: squash
-      org1/repo2: squash
-    queries:
-      - repos:
-          - org1/repo1
-          - org1/repo2
-        labels:
-          - merge-queue/add
-    github:
-      orgs:
-        - name: org1
-          repos:
-            - name: repo1
-            - name: repo2
+  image: "gcr.io/k8s-prow/tide:latest"
+  sync_period: "10s"
+  status_update_period: "10s"
+  context_options:
+    from-branch-protection: true
+  batch_size_limit:
+    "org1/*": -1  # -1 means unlimited batch size
+  merge_method:
+    org1/repo1: squash
+  blocker_label: "merge-queue/stop"
+  queries:
+  - repos:
+    - org1/repo1
+    labels:
+    - "merge-queue/add"
+    reviewApprovedRequired: true
+  max_goroutines: 20
+
+github:
+  secret_name: "github-token"
+  orgs:
+  - name: org1
+    repos:
+    - name: repo1
 ```
 
 ## Operations
