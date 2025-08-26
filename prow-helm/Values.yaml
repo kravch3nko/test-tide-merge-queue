@@ -1,5 +1,5 @@
-# Core settings
-github_token: "github-token"
+github:
+  tokenSecretName: "github-token"
 
 # Tide configuration
 tide:
@@ -9,21 +9,18 @@ tide:
     status_update_period: "30s"
     batch_size_limit: 1  # Disables batching
     max_goroutines: 20
+
+    blocker_label: "merge-queue/stop"
     
     merge_method:
       kravch3nko/test-tide-merge-queue: squash
-    
+
     queries:
       - repos:
           - kravch3nko/test-tide-merge-queue
         labels:
           - merge-queue/add
-        missingLabels:
-          - merge-queue/stop
+        missingLabels: []                 
         includeDrafts: false
-    
-    github:
-      orgs:
-        - name: kravch3nko
-          repos:
-            - name: test-tide-merge-queue
+
+  
