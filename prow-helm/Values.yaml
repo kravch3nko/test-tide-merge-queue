@@ -1,17 +1,22 @@
 tide:
   image: "gcr.io/k8s-prow/tide:latest"
-  sync_period: "30s"
-  status_update_period: "30s"
+  sync_period: "10s"
+  status_update_period: "10s"
+  context_options:
+    # Infer required and optional jobs from Branch Protection configuration
+    from-branch-protection: true
+  batch_size_limit:
+    "kravch3nko/*": -1
   merge_method:
-    kravch3nko/test-tide-merge-queue: rebase
-  squash_label: ""
+    kravch3nko/test-tide-merge-queue: squash
   blocker_label: "merge-queue/stop"
   queries:
+  # PR query
   - repos:
     - kravch3nko/test-tide-merge-queue
     labels:
     - "merge-queue/add"
-    missingLabels: []
+    reviewApprovedRequired: true
   max_goroutines: 20
 
 github:

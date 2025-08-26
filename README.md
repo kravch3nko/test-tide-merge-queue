@@ -29,33 +29,6 @@ kubectl create secret generic github-token \
 
 2. **Configure Values**
 Edit `prow-helm/values.yaml`:
-```yaml
-tide:
-  config:
-    merge_method:
-      your-org/your-repo: squash
-    queries:
-      - repos:
-          - your-org/your-repo
-        labels:
-          - merge-queue/add
-        missingLabels:
-          - merge-queue/stop
-        includeDrafts: false
-      # Check for stop label on issues
-      - repos:
-          - your-org/your-repo
-        labels:
-          - merge-queue/stop
-        state: open
-        type: issue
-        blocking: true
-    github:
-      orgs:
-        - name: your-org
-          repos:
-            - name: your-repo
-```
 
 3. **Deploy**
 ```bash
@@ -135,7 +108,7 @@ tide:
 
 ### Updates
 ```bash
-helm upgrade prow ./prow-helm -n prow --wait
+helm upgrade prow ./prow-helm -n prow -f prow-helm/Values.yaml --wait
 kubectl rollout restart deployment -n prow
 ```
 
