@@ -5,47 +5,4 @@ metadata:
   namespace: prow
 data:
   config.yaml: |
-    tide:
-      sync_period: "30s"
-      status_update_period: "30s"
-      
-      merge_method:
-        {{- range .Values.repositories }}
-        {{ .org }}/{{ .name }}: {{ $.Values.tide.mergeMethod }}
-        {{- end }}
-      squash_label: ""
-      blocker_label: "merge-queue/stop"
-      
-      queries:
-      {{- range .Values.repositories }}
-      {{- $repoName := printf "%s/%s" .org .name }}
-      
-      # Merge Queue for {{ $repoName }}
-      - repos:
-        - {{ $repoName }}
-        labels:
-        - "merge-queue/add"
-        missingLabels: []
-        includeDrafts: false
-      {{- end }}
-      
-      max_goroutines: 20
-      
-    github:
-      orgs:
-      {{- $orgMap := dict }}
-      {{- range .Values.repositories }}
-        {{- if not (hasKey $orgMap .org) }}
-          {{- $orgMap = set $orgMap .org (list) }}
-        {{- end }}
-        {{- $repos := index $orgMap .org }}
-        {{- $repos = append $repos .name }}
-        {{- $orgMap = set $orgMap .org $repos }}
-      {{- end }}
-      {{- range $org, $repos := $orgMap }}
-      - name: {{ $org }}
-        repos:
-        {{- range $repos }}
-        - name: {{ . }}
-        {{- end }}
-      {{- end }}
+{{ .Values.tide.config | toYaml | indent 4 }}
