@@ -25,10 +25,6 @@ kubectl create namespace prow
 kubectl create secret generic github-token \
   --from-literal=token=<YOUR_GITHUB_PAT> \
   -n prow
-
-kubectl create secret generic github-hmac \
-  --from-literal=hmac=<RANDOM_STRING> \
-  -n prow
 ```
 
 2. **Configure Values**
