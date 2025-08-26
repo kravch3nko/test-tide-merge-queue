@@ -1,14 +1,27 @@
-github:
-  tokenSecretName: "github-token"
-  hmacTokenSecretName: "github-hmac"
-
-repositories:
-  - org: "kravch3nko"
-    name: "test-tide-merge-queue"
-
 tide:
   image: "gcr.io/k8s-prow/tide:latest"
-  mergeMethod: squash
-  requiredLabels: 
+  sync_period: "10s"
+  status_update_period: "10s"
+  context_options:
+    # Infer required and optional jobs from Branch Protection configuration
+    from-branch-protection: true
+  batch_size_limit:
+    "kravch3nko/*": -1
+  merge_method:
+    kravch3nko/test-tide-merge-queue: squash
+  blocker_label: "merge-queue/stop"
+  queries:
+  # PR query
+  - repos:
+    - kravch3nko/test-tide-merge-queue
+    labels:
     - "merge-queue/add"
-  reviewApprovedRequired: true
+    reviewApprovedRequired: true
+  max_goroutines: 20
+
+github:
+  secret_name: "github-token"
+  orgs:
+  - name: kravch3nko
+    repos:
+    - name: test-tide-merge-queue

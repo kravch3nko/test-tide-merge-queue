@@ -1,151 +1,140 @@
-# �� Tide Merge Queue
+# Tide Merge Queue
 
-Simple merge queue for GitHub repositories using Tide.
+Simple GitHub merge queue using Tide, focused on simplicity and reliability.
 
-## ✨ Features
+## Features
 
-- **Simple label control**: One label to merge PRs
-- **Global emergency stop**: Pause all merging with one label on an issue
-- **GitHub branch protection**: Respects your existing CI requirements
-- **Multi-repository support**: Single queue for multiple repositories
-- **Automatic conflict handling**: No manual label management needed
+- **One-Label Control**: Single label to manage PR merges
+- **Emergency Stop**: Global pause with one issue label
+- **Branch Protection**: Automatic integration with GitHub CI rules
+- **Multi-Repository**: Shared queue across repositories
+- **Conflict Handling**: Automatic rebase and retry
 
-## 🚀 Quick Start
+## Quick Start
 
-### 1. Prerequisites
+### Prerequisites
+- Kubernetes cluster with Helm 3.x and kubectl
+- GitHub PAT with repo permissions
 
-- Kubernetes cluster
-- Helm 3.x
-- kubectl configured
-- GitHub Personal Access Token with repo permissions
+### Installation
 
-### 2. Create Secrets
-
+1. **Create Namespace and Secrets**
 ```bash
 kubectl create namespace prow
 
 kubectl create secret generic github-token \
   --from-literal=token=<YOUR_GITHUB_PAT> \
   -n prow
-
-kubectl create secret generic github-hmac \
-  --from-literal=hmac=<RANDOM_STRING> \
-  -n prow
 ```
 
-### 3. Configure Repository
-
+2. **Configure Values**
 Edit `prow-helm/values.yaml`:
-```yaml
-repositories:
-  - org: "your-org"
-    name: "your-repo"
-```
 
-### 4. Deploy
-
+3. **Deploy**
 ```bash
-helm install prow ./prow-helm -n prow
+helm install prow ./prow-helm -n prow -f prow-helm/Values.yaml
 ```
 
-### 5. Create GitHub Labels
+4. **Create GitHub Labels**
+| Label | Purpose | Color |
+|-------|---------|-------|
+| `merge-queue/add` | Add PR to merge queue | #0e8a16 (green) |
+| `merge-queue/stop` | Emergency stop | #d73a4a (red) |
 
-Create these labels in your repository:
+## Usage Guide
 
-```bash
-merge-queue/add          - #0e8a16 (green)
-merge-queue/stop         - #d73a4a (red)
-```
-
-## 📋 Usage
-
-### Normal Merge
-1. Create PR, get approval, wait for CI ✅
-2. Add label: `merge-queue/add`
-3. Tide automatically rebases + squashes + merges
+### Merging PRs
+1. Create PR → Get approvals → Pass CI
+2. Add `merge-queue/add` label
+3. Tide automatically:
+   - Checks branch protection rules
+   - Rebases PR if needed
+   - Squash merges when ready
 
 ### Emergency Stop
-1. Create an issue in your repository
-2. Add label: `merge-queue/stop` to the issue
-3. All merging stops immediately
-4. Close issue or remove label to resume
+1. Create issue → Add `merge-queue/stop` label
+2. All merging stops immediately
+3. Remove label or close issue to resume
 
-## 🏢 Multi-Repository Setup
+### Handling Conflicts
+- Tide detects conflicts during rebase
+- Updates PR status with details
+- Just fix conflicts and push - no labels needed
+- Automatic retry on next sync cycle
 
-Add multiple repositories to `prow-helm/values.yaml`:
+### Branch Protection
+- Tide respects GitHub branch protection rules
+- Required status checks enforced automatically
+- No need to duplicate CI configuration
+- Set up rules in GitHub repository settings
 
-```yaml
-repositories:
-  - org: "my-org"
-    name: "backend"
-  - org: "my-org"
-    name: "frontend"
-  - org: "partner-org"
-    name: "shared-lib"
-```
-
-Each repository operates independently but shares the same Tide instance.
-
-## 🔧 Configuration
+## Configuration
 
 ### Key Settings
-
-- **Merge Method**: `rebase` (rebase + squash)
+- **Merge Method**: Squash (configurable per repo)
 - **Sync Period**: 30 seconds
-- **Branch Protection**: Respects GitHub's CI requirements automatically
+- **Batch Size**: 1 (no batching)
+- **Branch Protection**: Automatic integration
 
-### GitHub Branch Protection
+### Multi-Repository Setup
+Add repositories to `values.yaml`:
+```yaml
+tide:
+  config:
+    merge_method:
+      org1/repo1: squash
+      org1/repo2: squash
+    queries:
+      - repos:
+          - org1/repo1
+          - org1/repo2
+        labels:
+          - merge-queue/add
+    github:
+      orgs:
+        - name: org1
+          repos:
+            - name: repo1
+            - name: repo2
+```
 
-Set up branch protection rules in GitHub to enforce:
-- Required status checks (CI/CD)
-- Required reviews
-- Up-to-date branches
+## Operations
 
-Tide will automatically respect these rules - no need to duplicate CI check names in the configuration.
+### Monitoring
+- View pod status: `kubectl get pods -n prow`
+- Check logs: `kubectl logs -n prow deployment/tide -f`
+- PR status shows in GitHub UI
+- Labels indicate current state
 
-## 🛠️ Operations
-
-### Check Status
+### Updates
 ```bash
-kubectl get pods -n prow
-kubectl logs -n prow deployment/tide -f
-```
-
-### Upgrade helm chart
-```
-helm upgrade --install prow ./prow-helm --namespace prow --wait
+helm upgrade prow ./prow-helm -n prow -f prow-helm/Values.yaml --wait
 kubectl rollout restart deployment -n prow
 ```
 
-### Add New Repository
-1. Edit `prow-helm/values.yaml`
-2. Add repository to the list
-3. Run: `helm upgrade prow ./prow-helm -n prow`
-
 ### Troubleshooting
-- Check pod logs for errors
-- Verify GitHub token has access to all repositories
-- Ensure labels exist in all repositories
+- PR stuck: Check CI status and branch protection
+- Conflicts: Check PR status for details
+- Queue paused: Look for `merge-queue/stop` issues
+- CI issues: Verify branch protection settings
 
-## 🔒 Security
+### Security
+- Secrets stored in Kubernetes
+- Limited RBAC permissions
+- No external endpoints (default)
 
-- GitHub token stored as Kubernetes secret
-- RBAC permissions limited to necessary resources
-- No external endpoints exposed (unless using webhooks)
+## Best Practices
+1. Use GitHub branch protection for CI rules
+2. Create descriptive stop issues
+3. Remove stops promptly when resolved
+4. Let Tide handle conflicts automatically
+5. Keep PR branches up to date
 
-## 📚 Documentation
+## Reference
+- [Tide Documentation](https://docs.prow.k8s.io/docs/components/tide/)
 
-- **User Guide**: `TIDE_GITHUB_CONTROLS.md`
-- **Tide Documentation**: https://docs.prow.k8s.io/docs/components/tide/
 
-## 🎯 Simple and Clean
 
-This setup provides a minimal, maintainable merge queue that:
-- Uses only 2 labels
-- Respects GitHub branch protection automatically  
-- Requires no CI check configuration duplication
-- Provides global emergency controls
-- Scales to multiple repositories effortlessly
 
 
 
