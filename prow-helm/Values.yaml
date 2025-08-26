@@ -1,8 +1,5 @@
-github:
-  tokenSecretName: "github-token"
-
-# Tide configuration
 tide:
+  image: "gcr.io/k8s-prow/tide:latest"
   sync_period: "30s"
   status_update_period: "30s"
   merge_method:
@@ -15,12 +12,11 @@ tide:
     labels:
     - "merge-queue/add"
     missingLabels: []
-    includeDrafts: false
   max_goroutines: 20
+
 github:
+  secret_name: "github-token"
   orgs:
   - name: kravch3nko
     repos:
     - name: test-tide-merge-queue
-
-  
