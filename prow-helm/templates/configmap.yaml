@@ -5,4 +5,7 @@ metadata:
   namespace: prow
 data:
   config.yaml: |
-{{ .Values.tide.config | toYaml | indent 4 }}
+    tide:
+{{ toYaml .Values.tide | indent 6 }}
+    github:
+{{ toYaml .Values.github | indent 6 }}
