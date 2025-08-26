@@ -59,7 +59,7 @@ tide:
 
 3. **Deploy**
 ```bash
-helm install prow ./prow-helm -n prow
+helm install prow ./prow-helm -n prow -f prow-helm/Values.yaml
 ```
 
 4. **Create GitHub Labels**
