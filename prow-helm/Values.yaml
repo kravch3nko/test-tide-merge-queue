@@ -13,7 +13,7 @@ tide:
     - kravch3nko/test-tide-merge-queue
     labels:
     - "merge-queue/add"
-    reviewApprovedRequired: true
+    reviewApprovedRequired: false
   max_goroutines: 20
 
 github:
