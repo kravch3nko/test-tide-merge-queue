@@ -1,0 +1,36 @@
+name: Rebase Merge Queue
+on:
+  push:
+    branches: [main]
+
+jobs:
+  rebase:
+    strategy:
+      matrix:
+        repo: ['kravch3nko/test-tide-merge-queue']  # Add your target repositories here
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for stop label
+        id: check
+        run: |
+          IFS='/' read -r owner repo <<< "${{ matrix.repo }}"
+          issues=$(gh api graphql -f query='
+            query($owner:String!, $name:String!) {
+              repository(owner:$owner, name:$name) {
+                issues(labels:["merge-queue/stop"], states:[OPEN]) {
+                  totalCount
+                }
+              }
+            }' -f owner=$owner -f name=$repo --jq '.data.repository.issues.totalCount')
+          echo "has_stop_label=$([[ $issues -gt 0 ]] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.PAT }}
+
+      - name: Rebase PRs
+        if: steps.check.outputs.has_stop_label != 'true'
+        uses: peter-evans/rebase@v3
+        with:
+          token: ${{ secrets.PAT }}
+          repository: ${{ matrix.repo }}
+          include-labels: merge-queue/add
+          base: main
