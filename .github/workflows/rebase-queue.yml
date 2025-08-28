@@ -19,13 +19,7 @@ jobs:
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          owner: kravch3nko
-
-      - name: Get GitHub App User ID
-        id: get-user-id
-        run: echo "user-id=$(gh api "/users/${{ steps.generate_token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
-        env:
-          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          repositories: ${{ matrix.repo }}  # Specify exact repo instead of owner
 
       - name: Check stop label
         id: check
@@ -43,4 +37,3 @@ jobs:
           repository: ${{ matrix.repo }}
           include-labels: merge-queue/add
           base: main
-          app-slug: ${{ steps.generate_token.outputs.app-slug }}
