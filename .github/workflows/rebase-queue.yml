@@ -2,6 +2,8 @@ name: Rebase Merge Queue
 on:
   push:
     branches: [main]
+  pull_request:
+    types: [opened, labeled]  # Catch new PRs and when label is added
 
 # Add permissions for GITHUB_TOKEN
 permissions:
@@ -11,6 +13,8 @@ permissions:
 
 jobs:
   rebase:
+    # Only run on push to main or when merge-queue/add label is added
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.label.name == 'merge-queue/add')
     strategy:
       matrix:
         repo: ['kravch3nko/test-tide-merge-queue']
