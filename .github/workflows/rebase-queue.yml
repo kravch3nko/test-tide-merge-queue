@@ -3,34 +3,34 @@ on:
   push:
     branches: [main]
 
+# Add permissions for GITHUB_TOKEN
+permissions:
+  contents: write
+  issues: read
+  pull-requests: write
+
 jobs:
   rebase:
     strategy:
       matrix:
-        repo: ['kravch3nko/test-tide-merge-queue']  # Add your target repositories here
+        repo: ['kravch3nko/test-tide-merge-queue']
     runs-on: ubuntu-latest
     steps:
-      - name: Check for stop label
+      # First check if rebase is allowed
+      - name: Check stop label
         id: check
         run: |
           IFS='/' read -r owner repo <<< "${{ matrix.repo }}"
-          issues=$(gh api graphql -f query='
-            query($owner:String!, $name:String!) {
-              repository(owner:$owner, name:$name) {
-                issues(labels:["merge-queue/stop"], states:[OPEN]) {
-                  totalCount
-                }
-              }
-            }' -f owner=$owner -f name=$repo --jq '.data.repository.issues.totalCount')
-          echo "has_stop_label=$([[ $issues -gt 0 ]] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-        env:
-          GH_TOKEN: ${{ secrets.PAT }}
+          issues=$(curl -s -H "Authorization: Bearer ${{ github.token }}" \
+            "https://api.github.com/repos/$owner/$repo/issues?labels=merge-queue/stop&state=open" | jq '. | length')
+          echo "blocked=$([[ $issues -gt 0 ]] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
 
+      # Find and rebase PRs if not blocked
       - name: Rebase PRs
-        if: steps.check.outputs.has_stop_label != 'true'
+        if: steps.check.outputs.blocked != 'true'
         uses: peter-evans/rebase@v3
         with:
-          token: ${{ secrets.PAT }}
+          token: ${{ github.token }}
           repository: ${{ matrix.repo }}
           include-labels: merge-queue/add
           base: main
