@@ -15,10 +15,17 @@ jobs:
     steps:
       - name: Generate token
         id: generate_token
-        uses: peter-evans/create-token@v3
+        uses: actions/create-github-app-token@v2
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: kravch3nko
+
+      - name: Get GitHub App User ID
+        id: get-user-id
+        run: echo "user-id=$(gh api "/users/${{ steps.generate_token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
 
       - name: Check stop label
         id: check
@@ -36,3 +43,4 @@ jobs:
           repository: ${{ matrix.repo }}
           include-labels: merge-queue/add
           base: main
+          app-slug: ${{ steps.generate_token.outputs.app-slug }}
