@@ -10,30 +10,28 @@ jobs:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.label.name == 'merge-queue/add')
     strategy:
       matrix:
-        repo: ['kravch3nko/test-tide-merge-queue']  # Add more repos here
+        repo: ['test-tide-merge-queue']  # Just repo names without owner
     runs-on: ubuntu-latest
     steps:
-      - name: Generate token
-        id: generate_token
-        uses: actions/create-github-app-token@v2
+      - uses: actions/create-github-app-token@v2
+        id: generate-token
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: ${{ matrix.repo }}  # Specify exact repo instead of owner
+          repositories: ${{ matrix.repo }}
 
       - name: Check stop label
         id: check
         run: |
-          IFS='/' read -r owner repo <<< "${{ matrix.repo }}"
-          issues=$(curl -s -H "Authorization: Bearer ${{ steps.generate_token.outputs.token }}" \
-            "https://api.github.com/repos/$owner/$repo/issues?labels=merge-queue/stop&state=open" | jq '. | length')
+          issues=$(curl -s -H "Authorization: Bearer ${{ steps.generate-token.outputs.token }}" \
+            "https://api.github.com/repos/kravch3nko/${{ matrix.repo }}/issues?labels=merge-queue/stop&state=open" | jq '. | length')
           echo "blocked=$([[ $issues -gt 0 ]] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
 
       - name: Rebase PRs
         if: steps.check.outputs.blocked != 'true'
         uses: peter-evans/rebase@v3
         with:
-          token: ${{ steps.generate_token.outputs.token }}
-          repository: ${{ matrix.repo }}
+          token: ${{ steps.generate-token.outputs.token }}
+          repository: kravch3nko/${{ matrix.repo }}
           include-labels: merge-queue/add
           base: main
