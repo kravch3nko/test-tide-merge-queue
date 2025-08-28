@@ -141,6 +141,22 @@ kubectl rollout restart deployment -n prow
 4. Let Tide handle conflicts automatically
 5. Keep PR branches up to date
 
+## Automated PR Management
+
+### Auto-Rebase Workflow
+This repository includes an automated GitHub Action that helps keep pull requests up to date with the main branch:
+
+- Automatically rebases PRs when they fall behind the main branch
+- Runs every 6 hours and on main branch updates
+- Can be manually triggered if needed
+- Adds comments to PRs about rebase status
+- Handles conflicts gracefully with notifications
+
+If a rebase fails due to conflicts, the action will:
+1. Leave a comment on the PR notifying about the conflicts
+2. Skip the PR until conflicts are resolved manually
+3. Try again on the next run after conflicts are resolved
+
 ## Reference
 - [Tide Documentation](https://docs.prow.k8s.io/docs/components/tide/)
 
