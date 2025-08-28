@@ -3,38 +3,26 @@ on:
   push:
     branches: [main]
   pull_request:
-    types: [opened, labeled]  # Catch new PRs and when label is added
-
-# Add permissions for GITHUB_TOKEN
-permissions:
-  contents: write
-  issues: read
-  pull-requests: write
+    types: [opened, labeled]
 
 jobs:
   rebase:
-    # Only run on push to main or when merge-queue/add label is added
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.label.name == 'merge-queue/add')
-    strategy:
-      matrix:
-        repo: ['kravch3nko/test-tide-merge-queue']
     runs-on: ubuntu-latest
     steps:
-      # First check if rebase is allowed
       - name: Check stop label
         id: check
         run: |
-          IFS='/' read -r owner repo <<< "${{ matrix.repo }}"
-          issues=$(curl -s -H "Authorization: Bearer ${{ github.token }}" \
+          IFS='/' read -r owner repo <<< "kravch3nko/test-tide-merge-queue"
+          issues=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT }}" \
             "https://api.github.com/repos/$owner/$repo/issues?labels=merge-queue/stop&state=open" | jq '. | length')
           echo "blocked=$([[ $issues -gt 0 ]] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
 
-      # Find and rebase PRs if not blocked
       - name: Rebase PRs
         if: steps.check.outputs.blocked != 'true'
         uses: peter-evans/rebase@v3
         with:
-          token: ${{ github.token }}
-          repository: ${{ matrix.repo }}
+          token: ${{ secrets.PAT }}
+          repository: kravch3nko/test-tide-merge-queue
           include-labels: merge-queue/add
           base: main
