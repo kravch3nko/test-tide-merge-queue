@@ -14,7 +14,7 @@ jobs:
       - name: Simulate tests
         run: |
           echo "Running tests..."
-          sleep 5
+          sleep 30
           echo "Tests passed!"
 
   lint:
@@ -24,7 +24,7 @@ jobs:
       - name: Simulate linting (50% failure rate)
         run: |
           echo "Running linter..."
-          sleep 3
+          sleep 30
           echo "✅ Linting passed!"
 
   build:
@@ -34,5 +34,5 @@ jobs:
       - name: Simulate build
         run: |
           echo "Building..."
-          sleep 4
+          sleep 10
           echo "Build successful!" 
