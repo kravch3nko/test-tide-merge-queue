@@ -8,13 +8,24 @@ on:
 jobs:
   rebase:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.label.name == 'merge-queue/add')
+    strategy:
+      matrix:
+        repo: ['kravch3nko/test-tide-merge-queue']  # Add more repos here
     runs-on: ubuntu-latest
     steps:
+      - name: Generate token
+        id: generate_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: ${{ matrix.repo }}  # Specify exact repo instead of owner
+
       - name: Check stop label
         id: check
         run: |
-          IFS='/' read -r owner repo <<< "kravch3nko/test-tide-merge-queue"
-          issues=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT }}" \
+          IFS='/' read -r owner repo <<< "${{ matrix.repo }}"
+          issues=$(curl -s -H "Authorization: Bearer ${{ steps.generate_token.outputs.token }}" \
             "https://api.github.com/repos/$owner/$repo/issues?labels=merge-queue/stop&state=open" | jq '. | length')
           echo "blocked=$([[ $issues -gt 0 ]] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
 
@@ -22,7 +33,7 @@ jobs:
         if: steps.check.outputs.blocked != 'true'
         uses: peter-evans/rebase@v3
         with:
-          token: ${{ secrets.PAT }}
-          repository: kravch3nko/test-tide-merge-queue
+          token: ${{ steps.generate_token.outputs.token }}
+          repository: ${{ matrix.repo }}
           include-labels: merge-queue/add
           base: main
